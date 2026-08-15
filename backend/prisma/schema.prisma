@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id String @id @default(uuid())
+  name  String
+  email String @unique
+  role  UserRole
+
+  courses Course[]
+  enrollments Enrollment[]
+  lessonCompletions LessonCompletion[]
+}
+
+model Course {
+  id String @id @default(uuid())
+  title String
+  description String
+  instructorId String
+
+  lessons Lesson[]
+  enrollments Enrollment[]
+
+  instructor   User @relation(fields: [instructorId], references: [id])
+}
+
+model Lesson {
+  id String @id @default(uuid())
+  title    String
+  content  String
+  position Int
+  courseId String
+
+  course Course @relation(fields: [courseId], references: [id])
+  
+  lessonCompletions LessonCompletion[]
+}
+
+model Enrollment {
+  id String @id @default(uuid())
+  userId   String
+  courseId String
+  enrolledAt DateTime
+
+  user User @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model LessonCompletion {
+  id String @id @default(uuid())
+  userId  String
+  lessonId  String
+  completedAt DateTime
+
+  user User @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+}
