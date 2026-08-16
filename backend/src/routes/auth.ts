@@ -1,30 +1,17 @@
 import { Router } from "express";
-import { auth } from "../lib/auth.js";
-import { fromNodeHeaders } from "better-auth/node";
+import { requireAuth } from "../middleware/auth.js";
 
 const authRouter = Router();
 
-authRouter.get("/me", async (req, res, next) => {
-    try {
-        const session = await auth.api.getSession({
-            headers: fromNodeHeaders(req.headers),
-        });
+authRouter.get("/me", requireAuth, (req, res) => {
+    const { user } = req.auth;
 
-        if (!session) {
-            res.status(401).json({
-                message: "Authentication required",
-            });
-            return;
-        }
-        res.status(200).json({
-            id: session.user.id,
-            name: session.user.name,
-            email: session.user.email,
-            role: session.user.role,
-        });
-    } catch (error) {
-        next(error);
-    }
+    res.status(200).json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    });
 });
 
 export default authRouter;

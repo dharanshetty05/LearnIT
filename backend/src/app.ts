@@ -6,6 +6,7 @@ import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import authRouter from "./routes/auth.js";
+import testRouter from "./routes/test.js";
 
 const app = express();
 
@@ -22,7 +23,8 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 
 app.use("/health", healthRouter);
-app.use("/api", authRouter)
+app.use("/api", authRouter);
+app.use("/api/test", testRouter);
 
 app.use(errorHandler);
 
