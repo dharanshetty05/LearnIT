@@ -45,6 +45,8 @@ model Lesson {
   course Course @relation(fields: [courseId], references: [id])
   
   lessonCompletions LessonCompletion[]
+
+  @@unique([courseId, position])
 }
 
 model Enrollment {
