@@ -1,5 +1,4 @@
 // Temporary health route
-
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 
@@ -8,6 +7,8 @@ const healthRouter = Router();
 healthRouter.get("/", async (req, res) => {
     try {
         await prisma.$queryRaw`SELECT 1`;
+
+        res.set("Cache-Control", "no-store");
         
         res.status(200).json({
             status: "ok",
