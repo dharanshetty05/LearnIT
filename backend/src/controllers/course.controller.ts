@@ -23,7 +23,7 @@ export const createCourseController: RequestHandler = async (req, res, next,) =>
                 id: course.id,
                 title: course.title,
                 description: course.description,
-                instructorid: course.instructorId,
+                instructorId: course.instructorId,
             },
         });
     } catch (error) {

@@ -7,6 +7,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import authRouter from "./routes/auth.js";
 import testRouter from "./routes/test.js";
+import courseRouter from "./routes/courses.js";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use("/health", healthRouter);
 app.use("/api", authRouter);
 app.use("/api/test", testRouter);
+app.use("/api/courses", courseRouter);
 
 app.use(errorHandler);
 
