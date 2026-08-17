@@ -4,6 +4,13 @@ import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+type Course = {
+    id: string;
+    title: string;
+    description: string;
+    instructorId: string;
+};
+
 export default function DashboardPage() {
     const router = useRouter();
     const [name, setName] = useState("");
@@ -14,6 +21,10 @@ export default function DashboardPage() {
     const [courseDescription, setCourseDescription] = useState("");
     const [creatingCourse, setCreatingCourse] = useState(false);
     const [courseMessage, setCourseMessage] = useState("");
+
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [coursesLoading, setCoursesLoading] = useState(false);
+    const [coursesMessage, setCoursesMessage] = useState("");
 
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
@@ -34,6 +45,9 @@ export default function DashboardPage() {
                 setName(data.name);
                 setEmail(data.email);
                 setRole(data.role);
+                if (data.role === "INSTRUCTOR") {
+                    await getMyCourses();
+                }
                 console.log(data);
             } catch {
                 setMessage("Unable to connect to the backend");
@@ -93,10 +107,35 @@ export default function DashboardPage() {
             setCourseMessage("Course created successfully.");
             setCourseTitle("");
             setCourseDescription("");
+            await getMyCourses();
         } catch {
             setCourseMessage("Unable to connect to the backend.");
         } finally {
             setCreatingCourse(false);
+        }
+    }
+
+    async function getMyCourses() {
+        setCoursesLoading(true);
+        setCourseMessage("");
+
+        try {
+            const response = await apiFetch("/api/courses/mine", {
+                method: "GET",
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setCourseMessage(data.message ?? "Unable to load courses.");
+                return;
+            }
+
+            setCourses(data.courses);
+        } catch {
+            setCourseMessage("Unable to connect to the backend.");
+        } finally {
+            setCoursesLoading(false);
         }
     }
 
@@ -148,6 +187,33 @@ export default function DashboardPage() {
                     </form>
 
                     {courseMessage && <p>{courseMessage}</p>}
+                </section>
+            )}
+
+            {role == "INSTRUCTOR" && (
+                <section className="flex flex-col w-64 flex-auto items-center">
+                    <h2 className="font-bold">My Courses</h2>
+
+                    {coursesLoading && <p>Loading courses...</p>}
+
+                    {!coursesLoading && coursesMessage && (
+                        <p>{coursesMessage}</p>
+                    )}
+
+                    {!coursesLoading &&  !coursesMessage && courses.length === 0 && (
+                        <p>You haven't created any courses yet.</p>
+                    )}
+
+                    {!coursesLoading && courses.length > 0 && (
+                        <div>
+                            {courses.map((course) => (
+                                <article key={course.id}>
+                                    <h3><i>Title:</i>{course.title}</h3>
+                                    <p><i>Description:</i>{course.description}</p>
+                                </article>
+                            ))}
+                        </div>
+                    )}
                 </section>
             )}
         </main>
