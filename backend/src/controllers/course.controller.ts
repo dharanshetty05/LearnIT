@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { createCourseSchema } from "../schemas/course.schema.js";
 import { ApiError } from "../errors/api-error.js";
-import { createCourse } from "../services/course.service.js";
+import { createCourse, getInstructorCourses } from "../services/course.service.js";
 
 export const createCourseController: RequestHandler = async (req, res, next,) => {
     try {
@@ -30,3 +30,16 @@ export const createCourseController: RequestHandler = async (req, res, next,) =>
         next(error);
     }
 }
+
+export const getInstructorCoursesController: RequestHandler = async (req, res, next,) => {
+    try {
+        const courses = await getInstructorCourses(req.auth.user.id);
+
+        res.status(200).json({
+            success: true,
+            courses,
+        });
+    } catch (error) {
+        next(error);
+    }
+};

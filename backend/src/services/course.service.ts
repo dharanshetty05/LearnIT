@@ -15,3 +15,11 @@ export async function createCourse(input:CreateCourseInput) {
         },
     });
 }
+
+export async function getInstructorCourses(instructorId: string) {
+    return prisma.course.findMany({
+        where: {
+            instructorId,
+        },
+    });
+}
