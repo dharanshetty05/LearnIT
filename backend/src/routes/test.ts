@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { requireRole } from "../middleware/authorization.js";
+import { prisma } from "../lib/prisma.js";
+import { ApiError } from "../errors/api-error.js";
+import { createCourseSchema } from "../schemas/course.schema.js";
 
 const testRouter = Router();
 
@@ -29,5 +32,71 @@ testRouter.get("/instructor", requireAuth, requireRole("INSTRUCTOR"), (req, res)
     });
 },
 );
+
+testRouter.get("/courses/:courseId", requireAuth, requireRole("INSTRUCTOR"), async (req, res, next) => {
+    try {
+        const { courseId } = req.params;
+
+        if (typeof courseId !== "string") {
+            throw new ApiError(400, "Invalid course ID");
+        }
+        const course = await prisma.course.findUnique({
+            where: {
+                id: courseId,
+            },
+        });
+
+        if (!course) {
+            throw new ApiError(404, "Course not found");
+        }
+
+        if (course.instructorId !== req.auth.user.id) {
+            throw new ApiError(403, "You do not have access to this course");
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Course ownership verified",
+            courseId: course.id,
+        });
+    } catch (error) {
+        next(error);
+    }
+},);
+
+
+// course A ID: e01ada91-1e6a-41f8-807d-1431879c8109
+// course B ID: d4478d1a-7f34-439c-bc83-b2e63d9bb3b4
+testRouter.post("/course", requireAuth, requireRole("INSTRUCTOR"), async (req, res, next) => {
+    try {
+        const result = createCourseSchema.safeParse(req.body);
+
+        if (!result.success) {
+            throw new ApiError(400, "Invalid course data");
+        }
+
+        const { title, description } = result.data;
+
+        const course = await prisma.course.create({
+            data: {
+                title,
+                description,
+                instructorId: req.auth.user.id,
+            },
+        });
+
+        res.status(201).json({
+            success: true,
+            course: {
+                id: course.id,
+                title: course.title,
+                description: course.description,
+                instructorId: course.instructorId,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+},);
 
 export default testRouter;

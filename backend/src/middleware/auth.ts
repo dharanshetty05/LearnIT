@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { auth } from "../lib/auth.js";
 import { fromNodeHeaders } from "better-auth/node";
+import { ApiError } from "../errors/api-error.js";
 
 type AuthSession = NonNullable<
     Awaited<ReturnType<typeof auth.api.getSession>>
@@ -21,11 +22,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
         });
 
         if (!session) {
-            res.status(401).json({
-                success: false,
-                message: "Authentication required",
-            });
-            return;
+            throw new ApiError(401, "Authentication required");
         }
 
         req.auth = session;
