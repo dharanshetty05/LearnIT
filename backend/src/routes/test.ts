@@ -3,7 +3,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireRole } from "../middleware/authorization.js";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../errors/api-error.js";
-import { createCourseSchema } from "../schemas/course.schema.js";
+import { createCourseController } from "../controllers/course.controller.js";
 
 const testRouter = Router();
 
@@ -67,36 +67,6 @@ testRouter.get("/courses/:courseId", requireAuth, requireRole("INSTRUCTOR"), asy
 
 // course A ID: e01ada91-1e6a-41f8-807d-1431879c8109
 // course B ID: d4478d1a-7f34-439c-bc83-b2e63d9bb3b4
-testRouter.post("/course", requireAuth, requireRole("INSTRUCTOR"), async (req, res, next) => {
-    try {
-        const result = createCourseSchema.safeParse(req.body);
-
-        if (!result.success) {
-            throw new ApiError(400, "Invalid course data");
-        }
-
-        const { title, description } = result.data;
-
-        const course = await prisma.course.create({
-            data: {
-                title,
-                description,
-                instructorId: req.auth.user.id,
-            },
-        });
-
-        res.status(201).json({
-            success: true,
-            course: {
-                id: course.id,
-                title: course.title,
-                description: course.description,
-                instructorId: course.instructorId,
-            },
-        });
-    } catch (error) {
-        next(error);
-    }
-},);
+testRouter.post("/course", requireAuth, requireRole("INSTRUCTOR"), createCourseController, );
 
 export default testRouter;
