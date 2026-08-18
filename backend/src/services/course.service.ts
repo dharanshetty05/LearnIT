@@ -23,3 +23,32 @@ export async function getInstructorCourses(instructorId: string) {
         },
     });
 }
+
+export async function getCourseById(courseId: string) {
+    return prisma.course.findUnique({
+        where: {
+            id: courseId,
+        },
+        select: {
+            id: true,
+            title: true,
+            description: true,
+            instructor: {
+                select: {
+                    id: true,
+                    name: true,
+                },
+            },
+            lessons: {
+                select: {
+                    id: true,
+                    title: true,
+                    position: true,
+                },
+                orderBy: {
+                    position: "asc",
+                },
+            },
+        },
+    });
+}

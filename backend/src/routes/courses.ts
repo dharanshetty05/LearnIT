@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { requireRole } from "../middleware/authorization.js";
-import { createCourseController, getInstructorCoursesController } from "../controllers/course.controller.js";
+import { createCourseController, getCourseByIdController, getInstructorCoursesController } from "../controllers/course.controller.js";
 
 const courseRouter = Router();
 
 courseRouter.post("/", requireAuth, requireRole("INSTRUCTOR"), createCourseController,);
 courseRouter.get("/mine", requireAuth, requireRole("INSTRUCTOR"), getInstructorCoursesController,);
+courseRouter.get("/:courseId", getCourseByIdController);
 
 export default courseRouter;

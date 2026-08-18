@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { createCourseSchema } from "../schemas/course.schema.js";
 import { ApiError } from "../errors/api-error.js";
-import { createCourse, getInstructorCourses } from "../services/course.service.js";
+import { createCourse, getCourseById, getInstructorCourses } from "../services/course.service.js";
 
 export const createCourseController: RequestHandler = async (req, res, next,) => {
     try {
@@ -38,6 +38,23 @@ export const getInstructorCoursesController: RequestHandler = async (req, res, n
         res.status(200).json({
             success: true,
             courses,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getCourseByIdController: RequestHandler<{ courseId: string }> = async (req, res, next,) => {
+    try {
+        const course = await getCourseById(req.params.courseId);
+
+        if (!course) {
+            throw new ApiError(404, "Course not found");
+        }
+
+        res.status(200).json({
+            success: true,
+            course,
         });
     } catch (error) {
         next(error);
