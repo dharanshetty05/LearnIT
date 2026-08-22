@@ -31,6 +31,8 @@ model Course {
   title        String
   description  String
   instructorId String
+  status       CourseStatus @default(ACTIVE)
+
   instructor   User         @relation(fields: [instructorId], references: [id])
   enrollments  Enrollment[]
   lessons      Lesson[]
@@ -73,6 +75,11 @@ model LessonCompletion {
 enum UserRole {
   STUDENT
   INSTRUCTOR
+}
+
+enum CourseStatus {
+  ACTIVE
+  ARCHIVED
 }
 
 model Session {

@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { createCourseSchema, updateCourseSchema } from "../schemas/course.schema.js";
 import { ApiError } from "../errors/api-error.js";
-import { createCourse, getCourseById, getInstructorCourses, updateCourse } from "../services/course.service.js";
+import { archiveCourse, createCourse, getCourseById, getInstructorCourses, updateCourse } from "../services/course.service.js";
 
 export const createCourseController: RequestHandler = async (req, res, next,) => {
     try {
@@ -90,6 +90,29 @@ export const updateCourseController: RequestHandler<{
             success: true,
             course: result.course,
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteCourseController: RequestHandler<{
+    courseId: string;
+}> = async (req, res, next) => {
+    try {
+        const result = await archiveCourse({
+            courseId: req.params.courseId,
+            instructorId: req.auth.user.id,
+        });
+
+        if (result.status === "NOT_FOUND") {
+            throw new ApiError(404, "Course not found");
+        }
+
+        if (result.status === "FORBIDDEN") {
+            throw new ApiError(403, "Forbidden");
+        }
+
+        res.status(204).send();
     } catch (error) {
         next(error);
     }

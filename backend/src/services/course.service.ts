@@ -13,6 +13,11 @@ interface UpdateCourseInput {
     instructorId: string,
 };
 
+interface DeleteCourseInput {
+    courseId: string,
+    instructorId: string,
+};
+
 export async function createCourse(input:CreateCourseInput) {
     return prisma.course.create({
         data: {
@@ -27,6 +32,7 @@ export async function getInstructorCourses(instructorId: string) {
     return prisma.course.findMany({
         where: {
             instructorId,
+            status: "ACTIVE",
         },
     });
 }
@@ -35,6 +41,7 @@ export async function getCourseById(courseId: string) {
     return prisma.course.findUnique({
         where: {
             id: courseId,
+            status: "ACTIVE",
         },
         select: {
             id: true,
@@ -92,5 +99,39 @@ export async function updateCourse(input: UpdateCourseInput) {
     return {
         status: "UPDATED" as const,
         course: updatedCourse,
+    };
+}
+
+export async function archiveCourse(input: DeleteCourseInput) {
+    const course = await prisma.course.findUnique({
+        where: {
+            id: input.courseId,
+        },
+    });
+
+    if (!course) {
+        return {
+            status: "NOT_FOUND" as const,
+        };
+    }
+
+    if (course.instructorId !== input.instructorId) {
+        return {
+            status: "FORBIDDEN" as const,
+        };
+    }
+
+    const archivedCourse = await prisma.course.update({
+        where: {
+            id: input.courseId,
+        },
+        data: {
+            status: "ARCHIVED",
+        },
+    });
+
+    return {
+        status: "ARCHIVED" as const,
+        course: archivedCourse,
     };
 }
