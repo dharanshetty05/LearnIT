@@ -68,14 +68,18 @@ export async function updateCourse(input: UpdateCourseInput) {
     });
 
     if (!course) {
-        return null;
+        return {
+            status: "NOT_FOUND" as const,
+        };
     }
 
     if (course.instructorId !== input.instructorId) {
-        return null;
+        return {
+            status: "FORBIDDEN" as const,
+        };
     }
 
-    return prisma.course.update({
+    const updatedCourse = await prisma.course.update({
         where: {
             id: input.courseId,
         },
@@ -84,4 +88,9 @@ export async function updateCourse(input: UpdateCourseInput) {
             description: input.description,
         },
     });
+
+    return {
+        status: "UPDATED" as const,
+        course: updatedCourse,
+    };
 }
