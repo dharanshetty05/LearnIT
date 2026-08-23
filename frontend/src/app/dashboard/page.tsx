@@ -25,6 +25,7 @@ export default function DashboardPage() {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [archivingCourseId, setArchivingCourseId] = useState<string | null>(null);
 
     useEffect(() => {
         async function getMe() {
@@ -122,6 +123,40 @@ export default function DashboardPage() {
             setCourseMessage("Unable to connect to the backend.");
         } finally {
             setCoursesLoading(false);
+        }
+    }
+
+    async function handleArchiveCourse(courseId:string) {
+        const confirmed = window.confirm(
+            "Are you sure you want to archive this course?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setArchivingCourseId(courseId);
+        setCourseMessage("");
+
+        try {
+            const response = await apiFetch(`/api/courses/${courseId}`, {
+                method: "DELETE",
+            });
+
+            const data = response.status === 204 ? null : await response.json();
+
+            if (!response.ok) {
+                setCourseMessage(
+                    data?.message ?? "Unable to archive course."
+                );
+                return;
+            }
+
+            await getMyCourses();
+        } catch {
+            setCourseMessage("Unable to connect to the backend.");
+        } finally {
+            setArchivingCourseId(null);
         }
     }
 
@@ -285,22 +320,52 @@ export default function DashboardPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {courses.map((course) => (
                                         <article
-                                            key={course.id}
-                                            className="rounded-lg border border-slate-200 p-4 transition hover:border-slate-300 hover:shadow-sm"
-                                        >
-                                            <h3 className="text-sm font-semibold text-slate-900">
-                                                <span className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">
-                                                    Title
-                                                </span>
-                                                {course.title}
-                                            </h3>
-                                            <p className="text-sm text-slate-600 mt-2">
-                                                <span className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">
-                                                    Description
-                                                </span>
-                                                {course.description}
-                                            </p>
-                                        </article>
+    key={course.id}
+    className="rounded-lg border border-slate-200 p-4 transition hover:border-slate-300 hover:shadow-sm"
+>
+    <h3 className="text-sm font-semibold text-slate-900">
+        <span className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">
+            Title
+        </span>
+        {course.title}
+    </h3>
+
+    <p className="text-sm text-slate-600 mt-2">
+        <span className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">
+            Description
+        </span>
+        {course.description}
+    </p>
+
+    <div className="mt-4 flex gap-2">
+        <button
+            type="button"
+            onClick={() => router.push(`/courses/${course.id}`)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+            View
+        </button>
+
+        <button
+            type="button"
+            onClick={() => router.push(`/courses/${course.id}/edit`)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+            Edit
+        </button>
+
+        <button
+            type="button"
+            onClick={() => handleArchiveCourse(course.id)}
+            disabled={archivingCourseId === course.id}
+            className="rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+            {archivingCourseId === course.id
+                ? "Archiving..."
+                : "Archive"}
+        </button>
+    </div>
+</article>
                                     ))}
                                 </div>
                             )}
