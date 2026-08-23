@@ -26,16 +26,19 @@ export default function EditCoursePage() {
                     method: "GET",
                 });
                 if (!response.ok) {
+                    setAuthLoading(false);
                     router.push("/login");
                     return;
                 }
                 const data = await response.json();
-                if (data.user.role !== "INSTRUCTOR") {
+                if (data.role !== "INSTRUCTOR") {
+                    setAuthLoading(false);
                     router.push("/dashboard");
                     return;
                 }
                 setAuthLoading(false);
             } catch {
+                setAuthLoading(false);
                 router.push("/login");
             }
         }

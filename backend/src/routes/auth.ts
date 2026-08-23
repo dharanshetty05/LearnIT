@@ -6,6 +6,7 @@ const authRouter = Router();
 authRouter.get("/me", requireAuth, (req, res) => {
     const { user } = req.auth;
 
+    res.set("Cache-Control", "no-store");
     res.status(200).json({
         id: user.id,
         name: user.name,
