@@ -1,9 +1,19 @@
+import { error } from "node:console";
 import { ApiError } from "../errors/api-error.js";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 
 interface CreateLessonInput {
     courseId: string;
+    title: string;
+    content: string;
+    position: number;
+    instructorId: string;
+}
+
+interface UpdateLessonInput {
+    courseId: string;
+    lessonId: string;
     title: string;
     content: string;
     position: number;
@@ -90,4 +100,93 @@ export async function getCourseLessons(courseId: string) {
         status: "OK" as const,
         lessons,
     };
+}
+
+export async function getLessonById(
+    courseId: string,
+    lessonId: string
+) {
+    const lesson = await prisma.lesson.findUnique({
+        where: {
+            id: lessonId,
+        },
+    });
+
+    if (!lesson) {
+        return {
+            status: "NOT_FOUND" as const,
+        };
+    }
+
+    if (lesson.courseId !== courseId) {
+        return {
+            status: "NOT_FOUND" as const,
+        };
+    }
+
+    return {
+        status: "OK" as const,
+        lesson,
+    };
+}
+
+export async function updateLesson(input:UpdateLessonInput) {
+    const course = await prisma.course.findUnique({
+        where: {
+            id: input.courseId,
+        },
+        select: {
+            id: true,
+            instructorId: true,
+        },
+    });
+
+    if (!course) {
+        return {
+            status: "NOT_FOUND" as const,
+        };
+    }
+
+    if (course.instructorId !== input.instructorId) {
+        return {
+            status: "FORBIDDEN" as const,
+        };
+    }
+
+    const lesson = await prisma.lesson.findUnique({
+        where: {
+            id: input.lessonId,
+        },
+    });
+
+    if (!lesson || lesson.courseId !== input.courseId) {
+        return {
+            status: "LESSON_NOT_FOUND" as const,
+        };
+    }
+
+    try {
+        const updatedLesson = await prisma.lesson.update({
+            where: {
+                id: input.lessonId,
+            },
+            data: {
+                title: input.title,
+                content: input.content,
+                position: input.position,
+            },
+        });
+
+        return {
+            status: "UPDATED" as const,
+            lesson: updatedLesson,
+        };
+    } catch (error) {
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"
+        ) {
+            throw new ApiError(409, "A lesson already exists at this position.");
+        }
+        throw error;
+    }
 }
