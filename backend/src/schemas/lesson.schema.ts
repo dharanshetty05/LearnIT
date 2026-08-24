@@ -11,3 +11,7 @@ export const updateLessonSchema = z.object({
     content: z.string().trim().min(1, "Content is required"),
     position: z.number().int().positive("Position must be a positive integer"),
 });
+
+export const reorderLessonsSchema = z.object({
+    lessonIds: z.array(z.string().min(1)),
+});
