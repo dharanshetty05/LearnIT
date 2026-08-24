@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { requireRole } from "../middleware/authorization.js";
 import { createCourseController, deleteCourseController, getCourseByIdController, getInstructorCoursesController, updateCourseController } from "../controllers/course.controller.js";
+import { createLessonController } from "../controllers/lesson.controller.js";
 
 const courseRouter = Router();
 
@@ -10,5 +11,7 @@ courseRouter.get("/mine", requireAuth, requireRole("INSTRUCTOR"), getInstructorC
 courseRouter.get("/:courseId", getCourseByIdController);
 courseRouter.patch("/:courseId", requireAuth, requireRole("INSTRUCTOR"), updateCourseController,);
 courseRouter.delete("/:courseId", requireAuth, requireRole("INSTRUCTOR"), deleteCourseController,);
+
+courseRouter.post("/:courseId/lessons", requireAuth, requireRole("INSTRUCTOR"), createLessonController,);
 
 export default courseRouter;
