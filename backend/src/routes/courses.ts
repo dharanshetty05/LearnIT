@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { requireRole } from "../middleware/authorization.js";
 import { createCourseController, deleteCourseController, getCourseByIdController, getInstructorCoursesController, updateCourseController } from "../controllers/course.controller.js";
-import { createLessonController } from "../controllers/lesson.controller.js";
+import { createLessonController, getCourseLessonsController } from "../controllers/lesson.controller.js";
 
 const courseRouter = Router();
 
@@ -13,5 +13,6 @@ courseRouter.patch("/:courseId", requireAuth, requireRole("INSTRUCTOR"), updateC
 courseRouter.delete("/:courseId", requireAuth, requireRole("INSTRUCTOR"), deleteCourseController,);
 
 courseRouter.post("/:courseId/lessons", requireAuth, requireRole("INSTRUCTOR"), createLessonController,);
+courseRouter.get("/:courseId/lessons", getCourseLessonsController,);
 
 export default courseRouter;

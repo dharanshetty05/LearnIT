@@ -1,6 +1,6 @@
 import { createLessonSchema } from "../schemas/lesson.schema.js";
 import type { Request, Response } from "express";
-import { createLesson } from "../services/lesson.service.js";
+import { createLesson, getCourseLessons } from "../services/lesson.service.js";
 
 export async function createLessonController(
     req:Request<{ courseId: string }>,
@@ -46,5 +46,30 @@ export async function createLessonController(
     return res.status(201).json({
         message: "Lesson created successfully.",
         lesson: result.lesson,
+    });
+}
+
+export async function getCourseLessonsController(
+    req:Request<{ courseId: string}>,
+    res: Response
+) {
+    const courseId = req.params.courseId;
+
+    if (!courseId) {
+        return res.status(400).json({
+            message: "Course ID is required.",
+        });
+    }
+
+    const result = await getCourseLessons(courseId);
+
+    if (result.status === "NOT_FOUND") {
+        return res.status(404).json({
+            message: "Course not found.",
+        });
+    }
+
+    return res.status(200).json({
+        lessons: result.lessons,
     });
 }

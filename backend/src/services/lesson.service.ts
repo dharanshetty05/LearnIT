@@ -59,3 +59,35 @@ export async function createLesson(input:CreateLessonInput) {
         lesson,
     };
 }
+
+export async function getCourseLessons(courseId: string) {
+    const course = await prisma.course.findUnique({
+        where: {
+            id: courseId,
+        },
+        select: {
+            id: true,
+        },
+    });
+
+    if (!course) {
+        return {
+            status: "NOT_FOUND" as const,
+        };
+    }
+
+    const lessons = await prisma.lesson.findMany({
+        where: {
+            courseId,
+        },
+        orderBy: {
+            position: "asc",
+        },
+    });
+    
+
+    return {
+        status: "OK" as const,
+        lessons,
+    };
+}
