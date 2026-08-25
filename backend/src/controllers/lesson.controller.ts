@@ -61,11 +61,17 @@ export async function getCourseLessonsController(
         });
     }
 
-    const result = await getCourseLessons(courseId);
+    const result = await getCourseLessons(courseId, req.auth.user.id);
 
     if (result.status === "NOT_FOUND") {
         return res.status(404).json({
             message: "Course not found.",
+        });
+    }
+
+    if (result.status === "FORBIDDEN") {
+        return res.status(403).json({
+            message: "You do not own this course.",
         });
     }
 
@@ -86,11 +92,17 @@ export async function getLessonController(
         });
     }
 
-    const result = await getLessonById(courseId, lessonId);
+    const result = await getLessonById(courseId, lessonId, req.auth.user.id);
 
     if (result.status === "NOT_FOUND") {
         return res.status(404).json({
             message: "Lesson not found.",
+        });
+    }
+
+    if (result.status === "FORBIDDEN") {
+        return res.status(403).json({
+            message: "You do not own this course.",
         });
     }
 

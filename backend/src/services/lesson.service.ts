@@ -1,4 +1,3 @@
-import { error } from "node:console";
 import { ApiError } from "../errors/api-error.js";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
@@ -76,13 +75,14 @@ export async function createLesson(input:CreateLessonInput) {
     };
 }
 
-export async function getCourseLessons(courseId: string) {
+export async function getCourseLessons(courseId: string, instructorId: string) {
     const course = await prisma.course.findUnique({
         where: {
             id: courseId,
         },
         select: {
             id: true,
+            instructorId: true,
         },
     });
 
@@ -90,6 +90,12 @@ export async function getCourseLessons(courseId: string) {
         return {
             status: "NOT_FOUND" as const,
         };
+    }
+
+    if (course.instructorId !== instructorId) {
+        return {
+            status: "FORBIDDEN" as const,
+        }
     }
 
     const lessons = await prisma.lesson.findMany({
@@ -110,21 +116,38 @@ export async function getCourseLessons(courseId: string) {
 
 export async function getLessonById(
     courseId: string,
-    lessonId: string
+    lessonId: string,
+    instructorId: string
 ) {
+    const course = await prisma.course.findUnique({
+        where: {
+            id: courseId,
+        },
+        select: {
+            id: true,
+            instructorId: true,
+        },
+    });
+
+    if (!course) {
+        return {
+            status: "NOT_FOUND" as const,
+        };
+    }
+
+    if (course.instructorId !== instructorId) {
+        return {
+            status: "FORBIDDEN" as const,
+        };
+    }
+
     const lesson = await prisma.lesson.findUnique({
         where: {
             id: lessonId,
         },
     });
 
-    if (!lesson) {
-        return {
-            status: "NOT_FOUND" as const,
-        };
-    }
-
-    if (lesson.courseId !== courseId) {
+    if (!lesson || lesson.courseId !== courseId) {
         return {
             status: "NOT_FOUND" as const,
         };
@@ -134,7 +157,7 @@ export async function getLessonById(
         status: "OK" as const,
         lesson,
     };
-}
+}   
 
 export async function updateLesson(input:UpdateLessonInput) {
     const course = await prisma.course.findUnique({

@@ -16,8 +16,8 @@ courseRouter.delete("/:courseId", requireAuth, requireRole("INSTRUCTOR"), delete
 
 // Lesson related endpoints
 courseRouter.post("/:courseId/lessons", requireAuth, requireRole("INSTRUCTOR"), createLessonController,);
-courseRouter.get("/:courseId/lessons", getCourseLessonsController,);
-courseRouter.get("/:courseId/lessons/:lessonId", getLessonController,);
+courseRouter.get("/:courseId/lessons", requireAuth, getCourseLessonsController,);
+courseRouter.get("/:courseId/lessons/:lessonId", requireAuth, getLessonController,);
 courseRouter.patch("/:courseId/lessons/order", requireAuth, requireRole("INSTRUCTOR"), reorderLessonsController,);
 courseRouter.patch("/:courseId/lessons/:lessonId", requireAuth, requireRole("INSTRUCTOR"), updateLessonController);
 courseRouter.delete("/:courseId/lessons/:lessonId", requireAuth, requireRole("INSTRUCTOR"), deleteLessonController,);
