@@ -28,9 +28,11 @@ export default function CourseDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [isInstructor, setIsInstructor] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [showLessonForm, setShowLessonForm] = useState(false);
 
     const courseId = params.courseId as string;
+    const canManageCourse = isInstructor && currentUserId !== null && course !== null && currentUserId === course.instructor.id;
 
     const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
     const [editingLesson, setEditingLesson] = useState<{
@@ -89,8 +91,10 @@ export default function CourseDetailsPage() {
 
                 const data = await response.json();
 
+                setCurrentUserId(data.id);
                 setIsInstructor(data.role === "INSTRUCTOR");
             } catch {
+                setCurrentUserId(null);
                 setIsInstructor(false);
             }
         }
@@ -385,7 +389,7 @@ export default function CourseDetailsPage() {
                                 Lessons
                             </h2>
 
-                            {isInstructor && (
+                            {canManageCourse && (
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -404,7 +408,7 @@ export default function CourseDetailsPage() {
                             )}
                         </div>
 
-                        {showLessonForm && isInstructor && (
+                        {showLessonForm && canManageCourse && (
                             <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
                                 <h3 className="text-base font-semibold text-slate-900">
                                     Create Lesson
@@ -428,7 +432,7 @@ export default function CourseDetailsPage() {
                             </div>
                         )}
 
-                        {editingLessonId && editingLesson && isInstructor && (
+                        {editingLessonId && editingLesson && canManageCourse && (
                             <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
@@ -483,7 +487,7 @@ export default function CourseDetailsPage() {
                                             </span>
                                         </div>
 
-                                        {isInstructor && (
+                                        {canManageCourse && (
                                             <div className="flex shrink-0 items-center gap-2">
                                                 <button
                                                     type="button"
@@ -545,23 +549,23 @@ export default function CourseDetailsPage() {
                                     </li>
                                 ))}
                             </ul>
-                                                    )}
+                        )}
 
-                                                    {isInstructor && orderChanged && (
-                                <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-sm text-slate-600">
-                                        You have unsaved lesson order changes.
-                                    </p>
+                        {canManageCourse && orderChanged && (
+                            <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-sm text-slate-600">
+                                    You have unsaved lesson order changes.
+                                </p>
 
-                                    <button
-                                        type="button"
-                                        onClick={handleSaveOrder}
-                                        disabled={orderSaving}
-                                        className="inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                                    >
-                                        {orderSaving ? "Saving..." : "Save Order"}
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveOrder}
+                                    disabled={orderSaving}
+                                    className="inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                                >
+                                    {orderSaving ? "Saving..." : "Save Order"}
+                                </button>
+                            </div>
                             )}
                     </section>
                 </div>

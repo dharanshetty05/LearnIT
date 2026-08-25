@@ -8,6 +8,10 @@ type CourseDetails = {
     id: string;
     title: string;
     description: string;
+    instructor: {
+        id: string;
+        name: string;
+    }
 };
 
 export default function EditCoursePage() {
@@ -18,6 +22,7 @@ export default function EditCoursePage() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [authLoading, setAuthLoading] = useState(true);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
         async function checkAccess() {
@@ -36,6 +41,7 @@ export default function EditCoursePage() {
                     router.push("/dashboard");
                     return;
                 }
+                setCurrentUserId(data.id);
                 setAuthLoading(false);
             } catch {
                 setAuthLoading(false);
@@ -112,6 +118,26 @@ export default function EditCoursePage() {
 
     if (!course) {
         return null;
+    }
+
+    if (currentUserId !== course.instructor.id) {
+        return (
+            <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+                <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                    <p className="text-sm font-medium text-red-600">
+                        You do not have permission to edit this course.
+                    </p>
+
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/courses/${courseId}`)}
+                        className="mt-6 inline-flex items-center justify-center rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                    >
+                        Back to Course
+                    </button>
+                </div>
+            </main>
+        );
     }
 
     return (
