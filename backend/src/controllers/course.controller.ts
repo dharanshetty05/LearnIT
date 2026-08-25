@@ -1,7 +1,8 @@
 import type { RequestHandler } from "express";
 import { createCourseSchema, updateCourseSchema } from "../schemas/course.schema.js";
 import { ApiError } from "../errors/api-error.js";
-import { archiveCourse, createCourse, getCourseById, getInstructorCourses, updateCourse } from "../services/course.service.js";
+import { archiveCourse, createCourse, getCourseById, getInstructorCourses, getPulicCourses, updateCourse } from "../services/course.service.js";
+import { success } from "zod";
 
 export const createCourseController: RequestHandler = async (req, res, next,) => {
     try {
@@ -34,6 +35,19 @@ export const createCourseController: RequestHandler = async (req, res, next,) =>
 export const getInstructorCoursesController: RequestHandler = async (req, res, next,) => {
     try {
         const courses = await getInstructorCourses(req.auth.user.id);
+
+        res.status(200).json({
+            success: true,
+            courses,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getPublicCoursesController: RequestHandler = async (req, res, next,) => {
+    try {
+        const courses = await getPulicCourses();
 
         res.status(200).json({
             success: true,

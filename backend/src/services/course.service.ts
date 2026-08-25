@@ -37,6 +37,25 @@ export async function getInstructorCourses(instructorId: string) {
     });
 }
 
+export async function getPulicCourses() {
+    return prisma.course.findMany({
+        where: {
+            status: "ACTIVE",
+        },
+        select: {
+            id: true,
+            title: true,
+            description: true,
+            instructor: {
+                select: {
+                    id: true,
+                    name: true,
+                },
+            },
+        },
+    });
+}
+
 export async function getCourseById(courseId: string) {
     return prisma.course.findUnique({
         where: {
