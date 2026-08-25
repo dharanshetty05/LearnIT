@@ -43,6 +43,10 @@ export default function CourseDetailsPage() {
     const [deletingLessonId, setDeletingLessonId] = useState<string | null>(null);
     const [lessonActionLoading, setLessonActionLoading] = useState(false);
 
+    const [reorderedLessons, setReorderedLessons] = useState<CourseDetails["lessons"]>([]);
+    const [orderChanged, setOrderChanged] = useState(false);
+    const [orderSaving, setOrderSaving] = useState(false);
+
     const refreshCourse = useCallback(async () => {
         try {
             const response = await apiFetch(`/api/courses/${courseId}`, {
@@ -93,6 +97,13 @@ export default function CourseDetailsPage() {
 
         checkRole();
     }, []);
+
+    useEffect(() => {
+        if (course) {
+            setReorderedLessons(course.lessons);
+            setOrderChanged(false);
+        }
+    }, [course]);
 
     async function handleCreateLesson(data: {
         title: string;
@@ -221,6 +232,73 @@ export default function CourseDetailsPage() {
         setEditingLesson(null);
     }
 
+    function moveLessonUp(index: number) {
+        if (index === 0)    return;
+
+        setReorderedLessons((lessons) => {
+            const updated = [...lessons];
+
+            [updated[index - 1], updated[index]] = [
+                updated[index],
+                updated[index - 1],
+            ];
+
+            return updated;
+        });
+
+        setOrderChanged(true);
+    }
+
+    function moveLessonDown(index: number) {
+        if (index === reorderedLessons.length - 1)  return;
+
+        setReorderedLessons((lessons) => {
+            const updated = [...lessons];
+
+            [updated[index], updated[index + 1]] = [
+                updated[index + 1],
+                updated[index],
+            ];
+
+            return updated;
+        });
+
+        setOrderChanged(true);
+    }
+
+    async function handleSaveOrder() {
+        if (!orderChanged)  return;
+
+        setOrderSaving(true);
+        setMessage("");
+
+        try {
+            const response = await apiFetch(`/api/courses/${courseId}/lessons/order`, {
+                method: "PATCH",
+                body: JSON.stringify({
+                    lessonIds: reorderedLessons.map(
+                        (lesson) => lesson.id
+                    ),
+                }),
+            })
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message ?? "Unable to save lesson order."
+                );
+            }
+
+            await refreshCourse();
+        } catch (error) {
+            setMessage(
+                error instanceof Error ? error.message : "Unable to save lesson order."
+            );
+        } finally {
+            setOrderSaving(false);
+        }
+
+    }
     if (loading) {
         return (
             <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
@@ -384,20 +462,20 @@ export default function CourseDetailsPage() {
                             </div>
                         )}
 
-                        {course.lessons.length === 0 ? (
+                        {reorderedLessons.length === 0 ? (
                             <p className="mt-3 text-sm text-slate-500">
                                 No lessons available yet.
                             </p>
                         ) : (
                             <ul className="mt-4 flex flex-col gap-2">
-                                {course.lessons.map((lesson) => (
+                                {reorderedLessons.map((lesson, index) => (
                                     <li
                                         key={lesson.id}
                                         className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
                                     >
                                         <div className="flex min-w-0 items-center gap-3">
                                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                                                {lesson.position}
+                                                {index + 1}
                                             </span>
 
                                             <span className="truncate font-medium">
@@ -409,10 +487,39 @@ export default function CourseDetailsPage() {
                                             <div className="flex shrink-0 items-center gap-2">
                                                 <button
                                                     type="button"
+                                                    onClick={() => moveLessonUp(index)}
+                                                    disabled={
+                                                        index === 0 ||
+                                                        orderSaving ||
+                                                        lessonActionLoading
+                                                    }
+                                                    aria-label={`Move ${lesson.title} up`}
+                                                    className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                                >
+                                                    ↑
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => moveLessonDown(index)}
+                                                    disabled={
+                                                        index === reorderedLessons.length - 1 ||
+                                                        orderSaving ||
+                                                        lessonActionLoading
+                                                    }
+                                                    aria-label={`Move ${lesson.title} down`}
+                                                    className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                                >
+                                                    ↓
+                                                </button>
+
+                                                <button
+                                                    type="button"
                                                     onClick={() => handleEditLesson(lesson.id)}
                                                     disabled={
                                                         lessonLoading ||
-                                                        lessonActionLoading
+                                                        lessonActionLoading ||
+                                                        orderSaving
                                                     }
                                                     className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
@@ -424,7 +531,8 @@ export default function CourseDetailsPage() {
                                                     onClick={() => handleDeleteLesson(lesson.id)}
                                                     disabled={
                                                         lessonLoading ||
-                                                        lessonActionLoading
+                                                        lessonActionLoading ||
+                                                        orderSaving
                                                     }
                                                     className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors duration-150 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
@@ -437,7 +545,24 @@ export default function CourseDetailsPage() {
                                     </li>
                                 ))}
                             </ul>
-                        )}
+                                                    )}
+
+                                                    {isInstructor && orderChanged && (
+                                <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-sm text-slate-600">
+                                        You have unsaved lesson order changes.
+                                    </p>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveOrder}
+                                        disabled={orderSaving}
+                                        className="inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                                    >
+                                        {orderSaving ? "Saving..." : "Save Order"}
+                                    </button>
+                                </div>
+                            )}
                     </section>
                 </div>
             </div>
