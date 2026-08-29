@@ -1,378 +1,407 @@
 "use client";
+
 import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 type Course = {
-    id: string;
-    title: string;
-    description: string;
-    instructorId: string;
+  id: string;
+  title: string;
+  description: string;
+  instructorId: string;
 };
 
 export default function DashboardPage() {
-    const router = useRouter();
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [role, setRole] = useState("");
-    const [courseTitle, setCourseTitle] = useState("");
-    const [courseDescription, setCourseDescription] = useState("");
-    const [creatingCourse, setCreatingCourse] = useState(false);
-    const [courseMessage, setCourseMessage] = useState("");
-    const [courses, setCourses] = useState<Course[]>([]);
-    const [coursesLoading, setCoursesLoading] = useState(false);
-    const [coursesMessage, setCoursesMessage] = useState("");
-    const [message, setMessage] = useState("");
-    const [loading, setLoading] = useState(true);
-    const [loggingOut, setLoggingOut] = useState(false);
-    const [archivingCourseId, setArchivingCourseId] = useState<string | null>(null);
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [courseTitle, setCourseTitle] = useState("");
+  const [courseDescription, setCourseDescription] = useState("");
+  const [creatingCourse, setCreatingCourse] = useState(false);
+  const [courseMessage, setCourseMessage] = useState("");
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [coursesMessage, setCoursesMessage] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [archivingCourseId, setArchivingCourseId] = useState<string | null>(null);
+  const [pendingArchiveId, setPendingArchiveId] = useState<string | null>(null);
 
-    useEffect(() => {
-        async function getMe() {
-            try {
-                const response = await apiFetch("/api/me", {
-                    method: "GET",
-                });
-                if (!response.ok) {
-                    setMessage("You are not authenticated");
-                    router.push("/login");
-                    return;
-                }
-                const data = await response.json();
-                setName(data.name);
-                setEmail(data.email);
-                setRole(data.role);
-                if (data.role === "INSTRUCTOR") {
-                    await getMyCourses();
-                }
-                console.log(data);
-            } catch {
-                setMessage("Unable to connect to the backend");
-            } finally {
-                setLoading(false);
-            }
+  useEffect(() => {
+    async function getMe() {
+      try {
+        const response = await apiFetch("/api/me", {
+          method: "GET",
+        });
+        if (!response.ok) {
+          setMessage("You are not authenticated");
+          router.push("/login");
+          return;
         }
-        getMe();
-    }, []);
-
-    async function handleLogout() {
-        setLoggingOut(true);
-        setMessage("");
-        try {
-            const response = await apiFetch("/api/auth/sign-out", {
-                method: "POST",
-            });
-            if (!response.ok) {
-                const data = await response.json();
-                setMessage(data.message ?? "Logout failed.");
-                return;
-            }
-            setName("");
-            setEmail("");
-            setRole("");
-            router.push("/login");
-        } catch {
-            setMessage("Unable to connect to the backend");
-        } finally {
-            setLoggingOut(false);
+        const data = await response.json();
+        setName(data.name);
+        setEmail(data.email);
+        setRole(data.role);
+        if (data.role === "INSTRUCTOR") {
+          await getMyCourses();
         }
+        console.log(data);
+      } catch {
+        setMessage("Unable to connect to the backend");
+      } finally {
+        setLoading(false);
+      }
     }
+    getMe();
+  }, []);
 
-    async function handleCreateCourse(event: React.FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        setCreatingCourse(true);
-        setCourseMessage("");
-        try {
-            const response = await apiFetch("/api/courses", {
-                method: "POST",
-                body: JSON.stringify({
-                    title: courseTitle,
-                    description: courseDescription,
-                }),
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                setCourseMessage(data.message ?? "Unable to create course.");
-                return;
-            }
-            setCourseMessage("Course created successfully.");
-            setCourseTitle("");
-            setCourseDescription("");
-            await getMyCourses();
-        } catch {
-            setCourseMessage("Unable to connect to the backend.");
-        } finally {
-            setCreatingCourse(false);
-        }
+  async function handleLogout() {
+    setLoggingOut(true);
+    setMessage("");
+    try {
+      const response = await apiFetch("/api/auth/sign-out", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        setMessage(data.message ?? "Logout failed.");
+        return;
+      }
+      setName("");
+      setEmail("");
+      setRole("");
+      router.push("/login");
+    } catch {
+      setMessage("Unable to connect to the backend");
+    } finally {
+      setLoggingOut(false);
     }
+  }
 
-    async function getMyCourses() {
-        setCoursesLoading(true);
-        setCourseMessage("");
-        try {
-            const response = await apiFetch("/api/courses/mine", {
-                method: "GET",
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                setCourseMessage(data.message ?? "Unable to load courses.");
-                return;
-            }
-            setCourses(data.courses);
-        } catch {
-            setCourseMessage("Unable to connect to the backend.");
-        } finally {
-            setCoursesLoading(false);
-        }
+  async function handleCreateCourse(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCreatingCourse(true);
+    setCourseMessage("");
+    try {
+      const response = await apiFetch("/api/courses", {
+        method: "POST",
+        body: JSON.stringify({
+          title: courseTitle,
+          description: courseDescription,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setCourseMessage(data.message ?? "Unable to create course.");
+        return;
+      }
+      setCourseMessage("Course created successfully.");
+      setCourseTitle("");
+      setCourseDescription("");
+      await getMyCourses();
+    } catch {
+      setCourseMessage("Unable to connect to the backend.");
+    } finally {
+      setCreatingCourse(false);
     }
+  }
 
-    async function handleArchiveCourse(courseId:string) {
-        const confirmed = window.confirm(
-            "Are you sure you want to archive this course?"
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        setArchivingCourseId(courseId);
-        setCourseMessage("");
-
-        try {
-            const response = await apiFetch(`/api/courses/${courseId}`, {
-                method: "DELETE",
-            });
-
-            const data = response.status === 204 ? null : await response.json();
-
-            if (!response.ok) {
-                setCourseMessage(
-                    data?.message ?? "Unable to archive course."
-                );
-                return;
-            }
-
-            await getMyCourses();
-        } catch {
-            setCourseMessage("Unable to connect to the backend.");
-        } finally {
-            setArchivingCourseId(null);
-        }
+  async function getMyCourses() {
+    setCoursesLoading(true);
+    setCourseMessage("");
+    try {
+      const response = await apiFetch("/api/courses/mine", {
+        method: "GET",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setCoursesMessage(data.message ?? "Unable to load courses.");
+        return;
+      }
+      setCourses(data.courses);
+    } catch {
+      setCoursesMessage("Unable to connect to the backend.");
+    } finally {
+      setCoursesLoading(false);
     }
+  }
 
-    if (loading) {
-        return (
-            <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="h-8 w-8 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin" />
-                    <p className="text-sm font-medium text-slate-500">Loading your dashboard...</p>
-                </div>
-            </main>
-        );
+  async function confirmArchiveCourse() {
+    if (!pendingArchiveId) return;
+    const courseId = pendingArchiveId;
+
+    setArchivingCourseId(courseId);
+    setCourseMessage("");
+
+    try {
+      const response = await apiFetch(`/api/courses/${courseId}`, {
+        method: "DELETE",
+      });
+
+      const data = response.status === 204 ? null : await response.json();
+
+      if (!response.ok) {
+        setCourseMessage(data?.message ?? "Unable to archive course.");
+        return;
+      }
+
+      await getMyCourses();
+    } catch {
+      setCourseMessage("Unable to connect to the backend.");
+    } finally {
+      setArchivingCourseId(null);
+      setPendingArchiveId(null);
     }
+  }
 
+  if (loading) {
     return (
-        <main className="min-h-screen bg-slate-50">
-            <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-
-                {/* Header */}
-                <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between border-b border-slate-200 pb-8 mb-8">
-                    <div className="space-y-1">
-                        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
-                            Dashboard
-                        </h1>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
-                            {name && <span className="font-medium text-slate-700">{name}</span>}
-                            {email && (
-                                <>
-                                    <span className="text-slate-300">•</span>
-                                    <span>{email}</span>
-                                </>
-                            )}
-                            {role && (
-                                <>
-                                    <span className="text-slate-300">•</span>
-                                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
-                                        {role}
-                                    </span>
-                                </>
-                            )}
-                        </div>
-                        {message && (
-                            <p className="text-sm text-red-600 pt-1">{message}</p>
-                        )}
-                    </div>
-
-                    {name && (
-                        <button
-                            type="button"
-                            onClick={handleLogout}
-                            disabled={loggingOut}
-                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
-                        >
-                            {loggingOut ? "Logging out..." : "Logout"}
-                        </button>
-                    )}
-                </div>
-
-                {/* Instructor content */}
-                {role === "INSTRUCTOR" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
-                        {/* Create Course */}
-                        <section className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
-                            <div className="mb-5">
-                                <h2 className="text-base font-semibold text-slate-900">Create Course</h2>
-                                <p className="text-sm text-slate-500 mt-0.5">Add a new course to your catalog.</p>
-                            </div>
-
-                            <form onSubmit={handleCreateCourse} className="space-y-4">
-                                <div className="space-y-1.5">
-                                    <label
-                                        htmlFor="course-title"
-                                        className="block text-sm font-medium text-slate-700"
-                                    >
-                                        Title
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="course-title"
-                                        value={courseTitle}
-                                        onChange={(event) => setCourseTitle(event.target.value)}
-                                        required
-                                        className="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label
-                                        htmlFor="course-description"
-                                        className="block text-sm font-medium text-slate-700"
-                                    >
-                                        Description
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="course-description"
-                                        value={courseDescription}
-                                        onChange={(event) => setCourseDescription(event.target.value)}
-                                        required
-                                        className="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                                    />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={creatingCourse}
-                                    className="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {creatingCourse ? "Creating..." : "Create Course"}
-                                </button>
-
-                                {courseMessage && (
-                                    <p className="text-sm text-slate-600 pt-1">{courseMessage}</p>
-                                )}
-                            </form>
-                        </section>
-
-                        {/* My Courses */}
-                        <section className="lg:col-span-3 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <div className="mb-5 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-base font-semibold text-slate-900">My Courses</h2>
-                                    <p className="text-sm text-slate-500 mt-0.5">Courses you're currently teaching.</p>
-                                </div>
-                                {!coursesLoading && courses.length > 0 && (
-                                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                                        {courses.length}
-                                    </span>
-                                )}
-                            </div>
-
-                            {coursesLoading && (
-                                <div className="space-y-3">
-                                    {[0, 1, 2].map((i) => (
-                                        <div
-                                            key={i}
-                                            className="animate-pulse rounded-lg border border-slate-200 p-4"
-                                        >
-                                            <div className="h-4 w-1/3 rounded bg-slate-200 mb-2" />
-                                            <div className="h-3 w-2/3 rounded bg-slate-100" />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {!coursesLoading && coursesMessage && (
-                                <p className="text-sm text-red-600">{coursesMessage}</p>
-                            )}
-
-                            {!coursesLoading && !coursesMessage && courses.length === 0 && (
-                                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 py-10 px-4 text-center">
-                                    <p className="text-sm font-medium text-slate-700">No courses yet</p>
-                                    <p className="text-sm text-slate-500 mt-1">
-                                        You haven&apos;t created any courses yet.
-                                    </p>
-                                </div>
-                            )}
-
-                            {!coursesLoading && courses.length > 0 && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {courses.map((course) => (
-                                        <article
-                                            key={course.id}
-                                            className="rounded-lg border border-slate-200 p-4 transition hover:border-slate-300 hover:shadow-sm"
-                                        >
-                                            <h3 className="text-sm font-semibold text-slate-900">
-                                                <span className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">
-                                                    Title
-                                                </span>
-                                                {course.title}
-                                            </h3>
-
-                                            <p className="text-sm text-slate-600 mt-2">
-                                                <span className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">
-                                                    Description
-                                                </span>
-                                                {course.description}
-                                            </p>
-
-                                            <div className="mt-4 flex gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => router.push(`/courses/${course.id}/manage`)}
-                                                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                                >
-                                                    View
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => router.push(`/courses/${course.id}/edit`)}
-                                                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                                >
-                                                    Edit
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleArchiveCourse(course.id)}
-                                                    disabled={archivingCourseId === course.id}
-                                                    className="rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                                >
-                                                    {archivingCourseId === course.id
-                                                        ? "Archiving..."
-                                                        : "Archive"}
-                                                </button>
-                                            </div>
-                                        </article>
-                                    ))}
-                                </div>
-                            )}
-                        </section>
-                    </div>
-                )}
-            </div>
-        </main>
+      <main className="flex min-h-screen w-full items-center justify-center bg-background px-4">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </main>
     );
+  }
+
+  return (
+    <main className="min-h-screen w-full bg-background">
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 border-b border-border pb-8 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Dashboard
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+              {name && <span className="font-medium text-foreground">{name}</span>}
+              {email && (
+                <>
+                  <span className="text-border">•</span>
+                  <span>{email}</span>
+                </>
+              )}
+              {role && <Badge variant="secondary">{role}</Badge>}
+            </div>
+            {message && (
+              <Alert variant="destructive" className="mt-2 w-fit">
+                <AlertDescription>{message}</AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          {name && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="sm:self-start"
+            >
+              {loggingOut && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loggingOut ? "Logging out..." : "Log out"}
+            </Button>
+          )}
+        </div>
+
+        {/* Instructor content */}
+        {role === "INSTRUCTOR" && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+            {/* Create Course */}
+            <Card className="h-fit lg:col-span-2">
+              <CardHeader className="p-6 pb-0">
+                <CardTitle className="text-base">Create course</CardTitle>
+                <CardDescription>Add a new course to your catalog.</CardDescription>
+              </CardHeader>
+
+              <CardContent className="p-6">
+                <form onSubmit={handleCreateCourse} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="course-title">Title</Label>
+                    <Input
+                      type="text"
+                      id="course-title"
+                      value={courseTitle}
+                      onChange={(event) => setCourseTitle(event.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="course-description">Description</Label>
+                    <Textarea
+                      id="course-description"
+                      value={courseDescription}
+                      onChange={(event) => setCourseDescription(event.target.value)}
+                      required
+                      rows={4}
+                    />
+                  </div>
+
+                  <Button type="submit" disabled={creatingCourse} className="w-full">
+                    {creatingCourse && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {creatingCourse ? "Creating..." : "Create course"}
+                  </Button>
+
+                  {courseMessage && (
+                    <p className="pt-1 text-sm text-muted-foreground">{courseMessage}</p>
+                  )}
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* My Courses */}
+            <Card className="lg:col-span-3">
+              <CardHeader className="flex-row items-center justify-between space-y-0 p-6 pb-0">
+                <div className="space-y-1.5">
+                  <CardTitle className="text-base">My courses</CardTitle>
+                  <CardDescription>Courses you&apos;re currently teaching.</CardDescription>
+                </div>
+                {!coursesLoading && courses.length > 0 && (
+                  <Badge variant="secondary">{courses.length}</Badge>
+                )}
+              </CardHeader>
+
+              <CardContent className="p-6">
+                {coursesLoading && (
+                  <div className="space-y-4">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="space-y-2 border-b border-border pb-4 last:border-0">
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-3 w-2/3" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!coursesLoading && coursesMessage && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{coursesMessage}</AlertDescription>
+                  </Alert>
+                )}
+
+                {!coursesLoading && !coursesMessage && courses.length === 0 && (
+                  <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-border py-10 px-4 text-center">
+                    <p className="text-sm font-medium text-foreground">No courses yet</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Create your first course to start building your catalog.
+                    </p>
+                  </div>
+                )}
+
+                {!coursesLoading && courses.length > 0 && (
+                  <div className="divide-y divide-border">
+                    {courses.map((course, index) => (
+                      <motion.div
+                        key={course.id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: index * 0.03 }}
+                        className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0 space-y-1">
+                          <h3 className="truncate text-sm font-medium text-foreground">
+                            {course.title}
+                          </h3>
+                          <p className="line-clamp-2 text-sm text-muted-foreground">
+                            {course.description}
+                          </p>
+                        </div>
+
+                        <div className="flex shrink-0 gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/courses/${course.id}/manage`)}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/courses/${course.id}/edit`)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setPendingArchiveId(course.id)}
+                            disabled={archivingCourseId === course.id}
+                          >
+                            {archivingCourseId === course.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Archive"
+                            )}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      <AlertDialog
+        open={pendingArchiveId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingArchiveId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this course?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the course from your active catalog. This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArchiveCourse}>
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </main>
+  );
 }
