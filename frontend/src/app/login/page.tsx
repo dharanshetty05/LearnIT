@@ -67,7 +67,7 @@ export default function LoginPage() {
           <CardHeader className="px-6 pt-6">
             <CardTitle>Welcome back</CardTitle>
             <CardDescription>
-              Enter your details to continue.
+              Enter your email and password to continue.
             </CardDescription>
           </CardHeader>
 

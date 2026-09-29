@@ -397,7 +397,7 @@ export default function DashboardPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmArchiveCourse}>
-              Archive
+              Archive Course
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
