@@ -17,6 +17,8 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { redirect } from "next/dist/server/api-utils";
+import router from "next/router";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -47,6 +49,7 @@ export default function RegisterPage() {
       }
       setIsError(false);
       setMessage(`Registration successful. Welcome, ${data.user.name}!`);
+      router.push("/dashboard");
     } catch {
       setIsError(true);
       setMessage("Unable to connect to the backend.");
